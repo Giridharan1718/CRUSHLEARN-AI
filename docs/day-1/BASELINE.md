@@ -30,6 +30,17 @@
 `package.json` declares ranges (`^18.2.0`, `^6.21.0`, etc.); the versions above are the
 actual installed/resolved versions from `npm ls --depth=0`.
 
+### Startup commands
+
+| Purpose | Command | Current state |
+|---|---|---|
+| Install (reproducible) | `npm ci` | Not run; `node_modules/` was already present |
+| Development | `npm run dev` | **Fails dependency scan** |
+| Production build | `npm run build` | Emits bundle with 2 warnings |
+| Preview built bundle | `npm run preview` | Not run during Day 1 |
+
+There is no `test`, `lint`, `format`, `typecheck` or `start` script.
+
 ---
 
 ## 2. Repository state before this Day 1 work
@@ -119,10 +130,11 @@ that the app works.
 npm run dev -- --port 5174 --strictPort
 ```
 
-**Exit code: 1**
+**Result: failed to serve. The process did not exit on its own and was terminated after
+capture.**
 
 ```
-VITE v5.4.21  ready in 319 ms
+VITE v5.4.21  ready in ~300 ms
 ➜  Local:   http://localhost:5174/
 
 Error: Failed to scan for dependencies from entries:
@@ -138,7 +150,10 @@ X [ERROR] No matching export in "src/utils/prerequisiteProgress.mjs"
 ```
 
 **Interpretation:** the app cannot be started. This is the primary P0 blocker (D01 in the
-audit). The port was released after the failed run; no lingering dev server remains.
+audit). Vite prints a local URL before the dependency scan finishes; the scan then fails.
+The process remained alive and was terminated explicitly. No listener remained on port
+5174 after cleanup. Do not record this as "exit code 1"; the failure is a scan error plus a
+hung process, which is worse for automation.
 
 ### 4.3 Tests — NOT AVAILABLE
 
@@ -200,7 +215,7 @@ No fix was applied during Day 1; the baseline is recorded as-is.
 | Dependencies resolve | **Verified** (`npm ls` exit 0) |
 | Production bundle emits | **Verified** (`npm run build` exit 0) |
 | Build is warning-free | **False** (2 missing-export warnings) |
-| App can start in dev | **False** (exit 1) |
+| App can start in dev | **False** (dependency scan fails; process hangs until terminated) |
 | Automated tests pass | **Not applicable** (no tests) |
 | Lint passes | **Not applicable** (not runnable) |
 | Any UI flow works end-to-end | **Unverified** (app cannot boot) |

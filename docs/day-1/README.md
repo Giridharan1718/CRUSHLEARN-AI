@@ -47,7 +47,7 @@ working.
 |---|---|
 | `npm ls --depth=0` | Pass, exit 0 |
 | `npm run build` | Exit 0, but **2 missing-export warnings** |
-| `npm run dev` | **Fail, exit 1** — dependency scan cannot resolve `getSkillMastery` / `getEvidenceStates` |
+| `npm run dev` | **Fail** — dependency scan cannot resolve `getSkillMastery` / `getEvidenceStates`; process hangs until terminated |
 | `npm test` | Not available — no script |
 | `npm run lint` | Not available — no script, ESLint not installed |
 | Test files | None |

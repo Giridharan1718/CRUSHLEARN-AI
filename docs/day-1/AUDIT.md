@@ -36,7 +36,7 @@ Also inspected: `package.json`, `package-lock.json`, `vite.config.js`, `tailwind
 |---|---|
 | `npm ls --depth=0` | Exit 0; dependency tree resolves |
 | `npm run build` | Exit 0; 2 missing-export warnings |
-| `npm run dev -- --port 5174 --strictPort` | **Exit 1**; dependency scan failure |
+| `npm run dev -- --port 5174 --strictPort` | **Failed to start**; dependency scan error; process stayed alive until explicitly terminated |
 | `npm test` | Exit 1; no `test` script |
 | `npm run lint` | Exit 1; no `lint` script |
 | `npm audit --omit=dev` | Exit 1; 3 moderate advisories |
@@ -55,7 +55,7 @@ Full command output is recorded in [`BASELINE.md`](./BASELINE.md).
 `App.jsx` defines:
 
 - Three public routes: `/` (Login), `/register`, `/forgot-password`
-- One protected layout route (`/*`) containing Navbar, Sidebar, footer and nine nested routes
+- One protected layout route (`/*`) containing Navbar, Sidebar, footer and eight nested page routes
 - A fallback redirect to `/dashboard`
 
 There is **no** application state container (no Redux/Zustand/Context). Pages read
@@ -106,7 +106,7 @@ Status legend:
 | 4 | Logout | `utils/auth.js:69-71`, `components/Navbar.jsx:34-37` | Implemented, unverified | Removes the only user record |
 | 5 | Route protection | `components/ProtectedRoute.jsx`, `App.jsx` | Implemented, unverified | Checks localStorage presence only |
 | 6 | App shell / navigation | `Navbar.jsx`, `Sidebar.jsx`, `App.jsx:50-91` | Implemented, unverified | Sidebar hidden below `md` |
-| 7 | Dashboard aggregates | `pages/Dashboard.jsx` | **Broken at render** | `getRecommendationLabel` is not imported (`Dashboard.jsx:228`) |
+| 7 | Dashboard aggregates | `pages/Dashboard.jsx` | **Broken at render** | Calls undefined `getRecommendationLabel` whenever a recommendation renders (`Dashboard.jsx:228`) |
 | 8 | Course catalog | `pages/Course.jsx`, `Dashboard.jsx:246-346` | Implemented, unverified | "Enroll Now" has no handler (`Dashboard.jsx:339`) |
 | 9 | Course progress | `pages/Course.jsx:29-33` | Implemented, flawed | Lesson IDs collide across courses (see D05) |
 | 10 | Lesson slides | `pages/Lesson.jsx:429-509` | Implemented, unverified | Tracks viewed slides in localStorage |
@@ -284,7 +284,7 @@ There are 13 Markdown documents (14,028 words). They describe three different pr
 | ID | Location | Defect | Impact |
 |---|---|---|---|
 | D01 | `src/pages/SkillPassport.jsx:6` | Imports `getSkillMastery`, `getEvidenceStates` from a module that exports neither | Vite dev dependency scan aborts; app never starts |
-| D02 | `src/pages/Dashboard.jsx:228` | Calls `getRecommendationLabel` without importing it | Dashboard throws `ReferenceError` |
+| D02 | `src/pages/Dashboard.jsx:228` | Calls `getRecommendationLabel` without importing it | Dashboard throws `ReferenceError` when a recommendation is rendered |
 | D03 | `src/pages/Lesson.jsx:227` | References undeclared `score` | Every lesson throws `ReferenceError` |
 | D04 | `src/pages/SkillPassport.jsx:159` | Iterates undeclared `evidenceStates` | Skill Passport would throw after D01 is fixed |
 
