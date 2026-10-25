@@ -3,6 +3,7 @@
 
 import { getLearningPath } from './learningObjectives.mjs';
 import { courses } from '../data/mockCourseData.mjs';
+import { getCourseCompletionStats } from './lessonProgress.mjs';
 
 /**
  * Get the progress status for a specific objective.
@@ -141,9 +142,5 @@ export const getCourseProgress = (user, courseId, courses) => {
   const course = courses.find((c) => c.id === courseId);
   if (!course) return 0;
 
-  const completedLessons = (user.completedLessons || []).filter((id) =>
-    course.lessons.some((lesson) => lesson.id === id)
-  );
-
-  return (completedLessons.length / course.lessons.length) * 100;
+  return getCourseCompletionStats(user, course).percentage;
 };

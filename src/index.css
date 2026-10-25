@@ -2,19 +2,184 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens as RGB triplets so Tailwind colors can compose with alpha
+ * (e.g. bg-accent/20). Every semantic token is overridden under `.dark`, and
+ * primary shade 50-200 are treated as surface-ish chips that need dark values
+ * while 400-900 remain usable as text on those chips.
+ */
 :root {
+  --primary-50: 240 249 255;
+  --primary-100: 224 242 254;
+  --primary-200: 186 230 253;
+  --primary-300: 125 211 252;
+  --primary-400: 56 189 248;
+  --primary-500: 14 165 233;
+  --primary-600: 3 105 161;
+  --primary-700: 7 89 133;
+  --primary-800: 9 71 108;
+  --primary-900: 12 74 110;
+
+  --surface: 255 255 255;
+  --surface-muted: 248 250 252;
+  --surface-elevated: 255 255 255;
+  --surface-dark: 15 23 42;
+
+  --ink: 15 23 42;
+  --ink-muted: 71 85 105;
+  --ink-subtle: 96 112 134;
+  --ink-inverse: 248 250 252;
+
+  --line: 226 232 240;
+  --line-strong: 203 213 225;
+  --line-subtle: 241 245 249;
+
+  --accent: 15 118 110;
+  --accent-soft: 204 251 241;
+  --accent-strong: 17 94 89;
+
+  --info: 29 78 216;
+  --info-soft: 219 234 254;
+  --info-strong: 30 64 175;
+
+  --success: 21 128 61;
+  --success-soft: 220 252 231;
+  --success-strong: 20 83 45;
+
+  --warning: 180 83 9;
+  --warning-soft: 254 243 199;
+  --warning-strong: 146 64 14;
+
+  --danger: 185 28 28;
+  --danger-soft: 254 226 226;
+  --danger-strong: 153 27 27;
+
+  --color-bg: rgb(var(--surface-muted));
+  --color-surface: rgb(var(--surface));
+  --color-text: rgb(var(--ink));
+  --color-muted: rgb(var(--ink-muted));
+  --color-border: rgb(var(--line));
+  --color-accent: rgb(var(--accent));
+
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: #f8fafc;
+.dark {
+  --primary-50: 11 45 56;
+  --primary-100: 15 58 71;
+  --primary-200: 21 80 97;
+  --primary-300: 125 211 252;
+  --primary-400: 56 189 248;
+  --primary-500: 56 189 248;
+  --primary-600: 86 195 232;
+  --primary-700: 125 211 252;
+  --primary-800: 186 230 253;
+  --primary-900: 224 242 254;
+
+  --surface: 15 23 42;
+  --surface-muted: 11 18 32;
+  --surface-elevated: 30 41 59;
+  --surface-dark: 2 6 12;
+
+  --ink: 226 232 240;
+  --ink-muted: 148 163 184;
+  --ink-subtle: 148 163 184;
+  --ink-inverse: 11 18 32;
+
+  --line: 51 65 85;
+  --line-strong: 71 85 105;
+  --line-subtle: 30 41 59;
+
+  --accent: 45 212 191;
+  --accent-soft: 19 78 74;
+  --accent-strong: 94 234 212;
+
+  --info: 124 196 255;
+  --info-soft: 15 42 63;
+  --info-strong: 147 197 253;
+
+  --success: 74 222 128;
+  --success-soft: 15 47 31;
+  --success-strong: 110 231 183;
+
+  --warning: 252 211 77;
+  --warning-soft: 56 42 12;
+  --warning-strong: 254 230 138;
+
+  --danger: 252 165 165;
+  --danger-soft: 57 23 26;
+  --danger-strong: 254 202 202;
+
+  --color-bg: rgb(var(--surface-muted));
+  --color-surface: rgb(var(--surface));
+
+  color-scheme: dark;
+}
+
+details:not([open]) > :not(summary) {
+  display: none;
 }
 
 * {
   box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * The learner can force motion off or on in Settings, independently of the
+ * operating system preference. `data-reduced-motion="off"` overrides the
+ * system setting above, which is why it is declared after it.
+ */
+[data-reduced-motion='on'] *,
+[data-reduced-motion='on'] *::before,
+[data-reduced-motion='on'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-reduced-motion='off'] *,
+[data-reduced-motion='off'] *::before,
+[data-reduced-motion='off'] *::after {
+  animation-duration: revert !important;
+  animation-iteration-count: revert !important;
+  transition-duration: revert !important;
+  scroll-behavior: revert !important;
+}
+
+@layer components {
+  .ui-card {
+    @apply rounded-2xl border border-line bg-surface shadow-soft;
+  }
+
+  .ui-button-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-ink-inverse transition hover:bg-accent-strong focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-button-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:bg-line-subtle focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-input {
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
 }

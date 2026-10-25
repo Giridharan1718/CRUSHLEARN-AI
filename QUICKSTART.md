@@ -1,5 +1,8 @@
 # 🚀 Quick Start Guide - CrushLearn AI
 
+> **Status note:** This is a local-first demo. The guidance engine is rule-based;
+> AI chat and model-generated explanations are not implemented. See `README.md`.
+
 ## ✅ Setup Complete!
 
 Your CrushLearn AI project is fully configured and ready to use.

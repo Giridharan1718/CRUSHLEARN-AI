@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthService } from '../utils/auth';
-import { GuidanceEngine } from '../ai/guidanceEngine';
+import { GuidanceEngine } from '../learning/guidanceEngine.mjs';
 import { courses } from '../data/mockCourseData';
-import { findLessonById, getCourseProgress, getSkillMastery, getEvidenceStates } from '../utils/prerequisiteProgress';
 import { classifyEvidence, ASSESSMENT_STATES, getStateLabel, getStateColor, getStateIcon } from '../utils/evidenceClassification';
 import { getRecommendationLabel } from '../utils/recommendationEngine';
+import {
+  countCompletedLessons,
+  getCourseCompletionStats,
+} from '../utils/lessonProgress.mjs';
 
 const RESULT_KEY = 'final_skill_check_result';
 
@@ -16,8 +19,33 @@ const SkillPassport = () => {
   const skills = GuidanceEngine.assessSkills(user.enrolledCourses || []);
   
   // Calculate overall stats
-  const totalLessonsCompleted = user.completedLessons?.length || 0;
+  const totalLessonsCompleted = countCompletedLessons(user, courses);
   const coursesInProgress = user.enrolledCourses?.length || 0;
+
+  // Derive a per-course evidence summary from the learner's recorded progress.
+  const evidenceStates = useMemo(() => {
+    const summary = {};
+    (user.enrolledCourses || []).forEach((courseId) => {
+      const course = courses.find((item) => item.id === courseId);
+      if (!course) return;
+      const completedCount = getCourseCompletionStats(user, course).completed;
+      const totalLessons = course.lessons.length || 1;
+      let state = ASSESSMENT_STATES.NOT_ASSESSED;
+      if (completedCount >= totalLessons) {
+        state = ASSESSMENT_STATES.DEMONSTRATED;
+      } else if (completedCount > 0) {
+        state = ASSESSMENT_STATES.DEVELOPING;
+      }
+      summary[course.title] = {
+        state,
+        note:
+          completedCount === 0
+            ? 'No lessons completed yet'
+            : `${completedCount} of ${totalLessons} lessons completed`,
+      };
+    });
+    return summary;
+  }, [user.enrolledCourses, user.completedLessons]);
 
   const finalResult = useMemo(() => {
     const raw = localStorage.getItem(RESULT_KEY);
@@ -44,21 +72,21 @@ const SkillPassport = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-ink mb-2">
           Skill Passport 🎓
         </h1>
-        <p className="text-gray-600">
+        <p className="text-ink-muted">
           Track your learning achievements and showcase your skills
         </p>
       </div>
 
       {/* Profile Card */}
-      <div className="bg-gradient-to-br from-primary-500 to-blue-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+      <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl shadow-xl p-8 mb-8 text-ink-inverse">
         <div className="flex items-center space-x-6">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
+          <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center">
             <span className="text-primary-700 font-bold text-4xl">
               {user.name.charAt(0).toUpperCase()}
             </span>
@@ -87,10 +115,10 @@ const SkillPassport = () => {
       </div>
 
       {/* Skills Section */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">My Skills</h2>
-          <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
+          <h2 className="text-2xl font-bold text-ink">My Skills</h2>
+          <span className="px-3 py-1 bg-success-soft text-success text-sm font-semibold rounded-full">
             {skills.length} skills
           </span>
         </div>
@@ -100,22 +128,22 @@ const SkillPassport = () => {
             {skills.map((skill, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl p-4 text-center border-2 border-primary-100 hover:border-primary-300 transition"
+                className="bg-gradient-to-br from-accent-soft to-info-soft rounded-xl p-4 text-center border-2 border-primary-100 hover:border-primary-300 transition"
               >
                 <div className="text-3xl mb-2">✨</div>
-                <p className="font-semibold text-gray-900">{skill}</p>
+                <p className="font-semibold text-ink">{skill}</p>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎯</div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-ink-muted mb-4">
               Complete lessons to unlock skills
             </p>
             <Link
               to="/dashboard"
-              className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition"
+              className="inline-block px-6 py-3 bg-accent text-ink-inverse rounded-lg font-medium hover:bg-accent-strong transition"
             >
               Start Learning
             </Link>
@@ -124,10 +152,10 @@ const SkillPassport = () => {
       </div>
 
       {/* Evidence States Section */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Evidence States</h2>
-          <span className="text-sm text-gray-500">
+          <h2 className="text-2xl font-bold text-ink">Evidence States</h2>
+          <span className="text-sm text-ink-subtle">
             Current assessment of your knowledge across subjects
           </span>
         </div>
@@ -139,8 +167,8 @@ const SkillPassport = () => {
               className={`rounded-xl p-4 border-2 transition ${getStateColor(state === 'NOT_ASSESSED' ? 'NOT_ASSESSED' : state)}`}
             >
               <div className="text-3xl mb-2">{getStateIcon(state)}</div>
-              <p className="font-semibold text-gray-900">{label}</p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="font-semibold text-ink">{label}</p>
+              <p className="text-xs text-ink-subtle mt-1">
                 {state === 'NOT_ASSESSED' && 'Never assessed'}
                 {state === 'NEEDS_PRACTICE' && 'Needs targeted practice'}
                 {state === 'DEVELOPING' && 'Improving but not confident'}
@@ -152,19 +180,19 @@ const SkillPassport = () => {
         </div>
 
         <div className="mt-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
+          <h3 className="text-lg font-bold text-ink mb-4">
             Subject Evidence Summary
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
             {Object.entries(evidenceStates).map(([subject, evidence]) => (
-              <div key={subject} className="bg-gray-50 rounded-lg p-4">
+              <div key={subject} className="bg-line-subtle rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-3">
-                  <span className="font-semibold text-gray-900">{subject}</span>
+                  <span className="font-semibold text-ink">{subject}</span>
                   <span className={`px-2 py-1 text-xs font-bold rounded-full ${getStateColor(evidence?.state || 'NOT_ASSESSED')}`}>
                     {getStateLabel(evidence?.state || 'NOT_ASSESSED')}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">{evidence?.note || 'No evidence collected yet'}</p>
+                <p className="text-sm text-ink-muted">{evidence?.note || 'No evidence collected yet'}</p>
                 {evidence?.recommendedActivity && (
                   <p className="text-xs text-primary-600 mt-2">
                     Suggested: {getRecommendationLabel(evidence.recommendedActivity)}
@@ -177,22 +205,22 @@ const SkillPassport = () => {
       </div>
 
       {/* Certificates Section */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Certificates</h2>
+          <h2 className="text-2xl font-bold text-ink">Certificates</h2>
           <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm font-semibold rounded-full">
             {certificates.filter((c) => c.status === 'completed').length} earned
           </span>
         </div>
 
         {!hasPassedFinal && (
-          <div className="border border-gray-200 bg-gray-50 rounded-lg p-4 mb-4">
-            <p className="text-sm text-gray-700">
+          <div className="border border-line bg-line-subtle rounded-lg p-4 mb-4">
+            <p className="text-sm text-ink-muted">
               Complete the Final Skill Check to unlock your certificate.
             </p>
             <Link
               to="/final-skill-check"
-              className="inline-block mt-3 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-semibold"
+              className="inline-block mt-3 px-4 py-2 bg-ink text-ink-inverse rounded-md text-sm font-semibold"
             >
               Start Final Skill Check
             </Link>
@@ -203,38 +231,38 @@ const SkillPassport = () => {
           {certificates.map((cert) => (
             <div
               key={cert.id}
-              className="border-2 border-gray-200 rounded-xl p-6 hover:border-primary-300 transition"
+              className="border-2 border-line rounded-xl p-6 hover:border-primary-300 transition"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">
+                    <h3 className="text-lg font-bold text-ink">
                       {cert.title}
                     </h3>
                     {cert.status === 'in-progress' ? (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">
+                      <span className="px-2 py-1 bg-warning-soft text-warning text-xs font-semibold rounded">
                         In Progress
                       </span>
                     ) : (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                      <span className="px-2 py-1 bg-success-soft text-success text-xs font-semibold rounded">
                         ✓ Completed
                       </span>
                     )}
                   </div>
                   
-                  <p className="text-gray-600 text-sm mb-3">
+                  <p className="text-ink-muted text-sm mb-3">
                     Issue Date: {cert.issueDate}
                   </p>
 
                   {cert.status === 'in-progress' && (
                     <div className="mb-3">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">Progress</span>
+                        <span className="text-ink-muted">Progress</span>
                         <span className="font-semibold text-primary-600">
                           {cert.progress}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-line rounded-full h-2">
                         <div
                           className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full"
                           style={{ width: `${cert.progress}%` }}
@@ -247,7 +275,7 @@ const SkillPassport = () => {
                 {cert.status === 'completed' && (
                   <Link
                     to={`/certificate/${cert.id}`}
-                    className="ml-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition"
+                    className="ml-4 px-4 py-2 bg-accent text-ink-inverse rounded-lg hover:bg-accent-strong font-medium transition"
                   >
                     View Certificate
                   </Link>
@@ -260,7 +288,7 @@ const SkillPassport = () => {
         {certificates.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📜</div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-ink-muted mb-4">
               No certificates yet. Complete courses to earn certificates!
             </p>
           </div>
@@ -268,8 +296,8 @@ const SkillPassport = () => {
       </div>
 
       {/* Learning Journey */}
-      <div className="bg-white rounded-2xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <div className="bg-surface rounded-2xl shadow-lg p-8">
+        <h2 className="text-2xl font-bold text-ink mb-6">
           Learning Journey
         </h2>
 
@@ -278,12 +306,10 @@ const SkillPassport = () => {
             const course = courses.find((c) => c.id === courseId);
             if (!course) return null;
 
-            const completedLessons = user.completedLessons?.filter((id) =>
-              course.lessons.some((lesson) => lesson.id === id)
-            ) || [];
-
-            const progress =
-              (completedLessons.length / course.lessons.length) * 100;
+            const { completed, percentage } = getCourseCompletionStats(
+              user,
+              course
+            );
 
             return (
               <div key={courseId} className="flex items-start space-x-4">
@@ -294,19 +320,18 @@ const SkillPassport = () => {
                 <div className="flex-1">
                   <Link
                     to={`/course/${courseId}`}
-                    className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition"
+                    className="text-lg font-semibold text-ink hover:text-primary-600 transition"
                   >
                     {course.title}
                   </Link>
-                  <p className="text-gray-600 text-sm mb-2">
-                    {completedLessons.length} of {course.lessons.length} lessons
-                    completed
+                  <p className="text-ink-muted text-sm mb-2">
+                    {completed} of {course.lessons.length} lessons completed
                   </p>
                   
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-line rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
+                      className="bg-gradient-to-r from-success to-success-strong h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%` }}
                     />
                   </div>
                 </div>
@@ -315,7 +340,7 @@ const SkillPassport = () => {
           })}
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

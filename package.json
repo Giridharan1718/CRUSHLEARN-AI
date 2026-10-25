@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:gateway": "cargo run --release --manifest-path gateway/Cargo.toml",
+    "gateway:build": "cargo build --release --manifest-path gateway/Cargo.toml",
+    "gateway:test": "cargo test --manifest-path gateway/Cargo.toml",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.0"

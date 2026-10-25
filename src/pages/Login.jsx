@@ -1,89 +1,114 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../utils/auth';
+import { DEMO_EMAIL, ensureDemoAccount } from '../utils/demoAccount.mjs';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setPending(true);
 
-    const result = AuthService.login(email, password);
-    
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError(result.error);
+    try {
+      const result = await AuthService.login(email, password);
+
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error);
+      }
+    } catch (loginError) {
+      setError(
+        loginError?.message || 'Sign-in could not be completed in this browser.'
+      );
+    } finally {
+      setPending(false);
     }
   };
 
-  // Quick demo login
-  const handleDemoLogin = () => {
-    setEmail('demo@crushlearn.ai');
-    setPassword('demo123');
-    setTimeout(() => {
-      const result = AuthService.login('demo@crushlearn.ai', 'demo123');
+  // The demo account is a real account with a real password verifier. It is
+  // created on first use so this button works without a seeded credential.
+  const handleDemoLogin = async () => {
+    setError('');
+    setPending(true);
+    setEmail(DEMO_EMAIL);
+
+    try {
+      await ensureDemoAccount();
+      const result = await AuthService.login(DEMO_EMAIL, 'demo1234');
       if (result.success) {
         navigate('/dashboard');
+      } else {
+        setError(result.error);
       }
-    }, 100);
+    } catch (demoError) {
+      setError(
+        demoError?.message || 'The demo account could not be opened in this browser.'
+      );
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-blue-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-accent-soft via-surface to-info-soft flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl mb-4">
-            <span className="text-white font-bold text-3xl">C</span>
+            <span className="text-ink-inverse font-bold text-3xl">C</span>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-ink mb-2">
             CrushLearn <span className="text-primary-600">AI</span>
           </h1>
-          <p className="text-gray-600">
-            Master new skills with AI-powered guidance
+          <p className="text-ink-muted">
+            Master new skills with guided practice and real study tools
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome Back</h2>
+        <div className="bg-surface rounded-2xl shadow-xl p-8">
+          <h2 className="text-2xl font-bold text-ink mb-6">Welcome Back</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-4 p-3 bg-danger-soft border border-danger/40 rounded-lg text-danger text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-muted mb-2">
                 Email Address
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
                 placeholder="you@example.com"
+                autoComplete="email"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-muted mb-2">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
                 placeholder="••••••••"
+                autoComplete="current-password"
                 required
               />
               <div className="mt-2 text-right">
@@ -95,9 +120,10 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition shadow-lg hover:shadow-xl"
+              disabled={pending}
+              className="w-full bg-accent text-ink-inverse py-3 rounded-lg font-semibold hover:bg-accent-strong transition shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign In
+              {pending ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 
@@ -105,16 +131,18 @@ const Login = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-line" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or</span>
+                <span className="px-2 bg-surface text-ink-subtle">Or</span>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={handleDemoLogin}
-              className="mt-4 w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition"
+              disabled={pending}
+              className="mt-4 w-full bg-line-subtle text-ink-muted py-3 rounded-lg font-medium hover:bg-line transition disabled:cursor-not-allowed disabled:opacity-60"
             >
               🚀 Try Demo Account
             </button>
@@ -122,7 +150,7 @@ const Login = () => {
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-ink-muted">
               Don't have an account?{' '}
               <Link to="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
                 Sign Up
@@ -131,8 +159,8 @@ const Login = () => {
           </div>
 
           {/* Info */}
-          <p className="mt-4 text-center text-sm text-gray-500">
-            This is a demo app. Any email and password will work!
+          <p className="mt-4 text-center text-sm text-ink-subtle">
+            Accounts live in this browser only. Nothing is sent to a server.
           </p>
         </div>
 
@@ -140,15 +168,15 @@ const Login = () => {
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-2xl mb-1">🎓</div>
-            <p className="text-xs text-gray-600">Expert Courses</p>
+            <p className="text-xs text-ink-muted">Expert Courses</p>
           </div>
           <div>
-            <div className="text-2xl mb-1">🤖</div>
-            <p className="text-xs text-gray-600">AI Guidance</p>
+            <div className="text-2xl mb-1">🧭</div>
+            <p className="text-xs text-ink-muted">Study Tools</p>
           </div>
           <div>
             <div className="text-2xl mb-1">📜</div>
-            <p className="text-xs text-gray-600">Certificates</p>
+            <p className="text-xs text-ink-muted">Certificates</p>
           </div>
         </div>
       </div>

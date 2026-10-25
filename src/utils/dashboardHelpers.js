@@ -1,14 +1,22 @@
 // Dashboard helper utilities
 
+import {
+  getCourseCompletionStats,
+  getOverallCompletionStats,
+  isLessonCompleted,
+  markLessonCompleted,
+} from './lessonProgress.mjs';
+import { getActivitySummary } from './learningActivity.mjs';
+
 /**
- * Calculate learning streak based on user activity
- * In production, this would query actual user activity dates
+ * The learning streak, derived from the learner's recorded activity.
+ *
+ * There is no stored counter to read here any more: the streak is computed
+ * from the dated activity entries, so it always matches what the learner
+ * actually did. It is null when activity tracking is off, so a caller can
+ * tell "no activity" apart from "not being tracked".
  */
-export const calculateLearningStreak = (user) => {
-  // Mock implementation - returns random streak between 1-30 days
-  // In real app, calculate from user.lastActivityDates array
-  return user.learningStreak || 5;
-};
+export const calculateLearningStreak = () => getActivitySummary().streak;
 
 /**
  * Get today's recommended lesson for the user
@@ -18,11 +26,11 @@ export const getTodaysLesson = (user, courses) => {
   for (const courseId of user.enrolledCourses || []) {
     const course = courses.find((c) => c.id === courseId);
     if (!course) continue;
-    
+
     const nextLesson = course.lessons.find(
-      (lesson) => !(user.completedLessons || []).includes(lesson.id)
+      (lesson) => !isLessonCompleted(user, course.id, lesson.id)
     );
-    
+
     if (nextLesson) {
       return { lesson: nextLesson, course };
     }
@@ -34,17 +42,15 @@ export const getTodaysLesson = (user, courses) => {
  * Calculate overall progress across all enrolled courses
  */
 export const calculateOverallProgress = (user, courses) => {
-  const totalLessons = (user.enrolledCourses || []).reduce((total, courseId) => {
-    const course = courses.find((c) => c.id === courseId);
-    return total + (course?.lessons.length || 0);
-  }, 0);
-  
-  const completedCount = (user.completedLessons || []).length;
-  
+  const enrolled = (user.enrolledCourses || [])
+    .map((courseId) => courses.find((course) => course.id === courseId))
+    .filter(Boolean);
+  const overall = getOverallCompletionStats(user, enrolled);
+
   return {
-    totalLessons,
-    completedCount,
-    percentage: totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0,
+    totalLessons: overall.total,
+    completedCount: overall.completed,
+    percentage: overall.percentage,
   };
 };
 
@@ -54,12 +60,8 @@ export const calculateOverallProgress = (user, courses) => {
 export const getCourseProgress = (user, courseId, courses) => {
   const course = courses.find((c) => c.id === courseId);
   if (!course) return 0;
-  
-  const completedLessons = (user.completedLessons || []).filter((id) =>
-    course.lessons.some((lesson) => lesson.id === id)
-  );
-  
-  return (completedLessons.length / course.lessons.length) * 100;
+
+  return getCourseCompletionStats(user, course).percentage;
 };
 
 /**
@@ -93,16 +95,14 @@ export const getUserSkills = (user, courses) => {
     if (!course) return;
 
     const courseSkills = skillsMap[courseId] || [];
-    const completedLessons = (user.completedLessons || []).filter((id) =>
-      course.lessons.some((lesson) => lesson.id === id)
-    );
+    const completedCount = getCourseCompletionStats(user, course).completed;
 
     courseSkills.forEach((skill) => {
       let status = 'not-started';
       
-      if (completedLessons.length >= skill.lessonThreshold) {
+      if (completedCount >= skill.lessonThreshold) {
         status = 'completed';
-      } else if (completedLessons.length > 0) {
+      } else if (completedCount > 0) {
         status = 'in-progress';
       }
 
@@ -121,13 +121,11 @@ export const getUserSkills = (user, courses) => {
  * Get weekly stats for the dashboard
  */
 export const getWeeklyStats = (user) => {
-  // In production, filter by date range
-  const completedThisWeek = (user.completedLessons || []).length;
-  const timeSpentMinutes = completedThisWeek * 45; // Mock: average 45 min per lesson
-  
+  // The lessons the learner has completed, counted from their own record.
+  const completedLessons = (user.completedLessons || []).length;
+
   return {
-    lessonsCompleted: completedThisWeek,
-    timeSpent: timeSpentMinutes,
+    lessonsCompleted: completedLessons,
     coursesActive: (user.enrolledCourses || []).length,
   };
 };
@@ -135,27 +133,6 @@ export const getWeeklyStats = (user) => {
 /**
  * Mark a lesson as complete
  */
-export const completeLesson = (user, lessonId) => {
-  const completedLessons = user.completedLessons || [];
-  
-  if (!completedLessons.includes(lessonId)) {
-    return {
-      ...user,
-      completedLessons: [...completedLessons, lessonId],
-    };
-  }
-  
-  return user;
-};
-
-/**
- * Update learning streak based on activity
- */
-export const updateLearningStreak = (user) => {
-  // In production, check if user was active yesterday
-  // For mock: increment streak
-  return {
-    ...user,
-    learningStreak: (user.learningStreak || 0) + 1,
-  };
+export const completeLesson = (user, lessonId, courseId = 'web-dev-101') => {
+  return markLessonCompleted(user, courseId, lessonId);
 };

@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthService } from '../utils/auth';
+import { courses } from '../data/mockCourseData';
+import { countCompletedLessons } from '../utils/lessonProgress.mjs';
+import { getActivitySummary } from '../utils/learningActivity.mjs';
+import { readSettings, writeSettings } from '../utils/settingsStore.mjs';
 
 const Profile = () => {
   const user = AuthService.getCurrentUser();
   const navigate = useNavigate();
+  const [settings, setSettings] = useState(() => readSettings());
+
+  const updateSetting = (patch) => {
+    const result = writeSettings(patch);
+    if (result.ok) {
+      setSettings(result.settings);
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -22,6 +34,11 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+
+  // The streak is derived from the learner's own dated activity.
+  const activity = getActivitySummary();
 
   const handleChange = (e) => {
     setFormData({
@@ -30,30 +47,38 @@ const Profile = () => {
     });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    
-    // Update user data
+    setError('');
+    setPending(true);
+
+    // The address is the account's identity, so it is changed through the
+    // account store, which checks it and refuses a collision.
+    const emailChanged =
+      formData.email.trim().toLowerCase() !== (user?.email || '').toLowerCase();
+
+    if (emailChanged) {
+      const result = await AuthService.updateEmail(formData.email);
+      if (!result.success) {
+        setError(result.error || 'The email address could not be changed.');
+        setPending(false);
+        return;
+      }
+    }
+
     AuthService.updateUser({
       name: formData.name,
-      email: formData.email,
       bio: formData.bio,
       learningGoal: formData.learningGoal,
     });
 
     setIsEditing(false);
     setSaved(true);
+    setPending(false);
 
     setTimeout(() => {
       setSaved(false);
     }, 3000);
-  };
-
-  const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      AuthService.logout();
-      navigate('/');
-    }
   };
 
   // Don't render if user is not logged in
@@ -65,43 +90,54 @@ const Profile = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-        <p className="text-gray-600">Manage your account and preferences</p>
+        <h1 className="text-3xl font-bold text-ink mb-2">Profile Settings</h1>
+        <p className="text-ink-muted">Manage your account and preferences</p>
       </div>
 
       {saved && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+        <div className="mb-6 p-4 bg-success-soft border border-success/40 rounded-lg text-success">
           ✓ Profile updated successfully!
         </div>
       )}
 
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 p-4 bg-danger-soft border border-danger/40 rounded-lg text-danger"
+        >
+          {error}
+        </div>
+      )}
+
       {/* Profile Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-6">
         <div className="flex items-center space-x-6 mb-8">
           {/* Avatar */}
           <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-4xl">
+            <span className="text-ink-inverse font-bold text-4xl">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>
 
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
-            <p className="text-gray-600">{user.email}</p>
+            <h2 className="text-2xl font-bold text-ink">{user.name}</h2>
+            <p className="text-ink-muted">{user.email}</p>
             <div className="mt-2 flex items-center space-x-4">
               <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm font-semibold rounded-full">
                 Learner
               </span>
-              <span className="text-sm text-gray-500">
-                Member since {new Date().toLocaleDateString()}
-              </span>
+              {user.createdAt && (
+                <span className="text-sm text-ink-subtle">
+                  Member since {new Date(user.createdAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
 
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition"
+              className="px-4 py-2 bg-line-subtle text-ink-muted rounded-lg hover:bg-line font-medium transition"
             >
               Edit Profile
             </button>
@@ -113,7 +149,7 @@ const Profile = () => {
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-ink-muted mb-2">
                   Full Name
                 </label>
                 <input
@@ -122,12 +158,12 @@ const Profile = () => {
                   value={formData.name}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-line-subtle disabled:text-ink-subtle"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-ink-muted mb-2">
                   Email Address
                 </label>
                 <input
@@ -136,13 +172,13 @@ const Profile = () => {
                   value={formData.email}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-line-subtle disabled:text-ink-subtle"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-muted mb-2">
                 Bio
               </label>
               <textarea
@@ -151,13 +187,13 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!isEditing}
                 rows="3"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-line-subtle disabled:text-ink-subtle"
                 placeholder="Tell us about yourself..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-muted mb-2">
                 Learning Goal
               </label>
               <input
@@ -166,7 +202,7 @@ const Profile = () => {
                 value={formData.learningGoal}
                 onChange={handleChange}
                 disabled={!isEditing}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition disabled:bg-line-subtle disabled:text-ink-subtle"
                 placeholder="What do you want to achieve?"
               />
             </div>
@@ -175,14 +211,15 @@ const Profile = () => {
               <div className="flex items-center space-x-4">
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold transition"
+                  disabled={pending}
+                  className="px-6 py-3 bg-accent text-ink-inverse rounded-lg hover:bg-accent-strong font-semibold transition disabled:opacity-50"
                 >
-                  Save Changes
+                  {pending ? 'Saving…' : 'Save Changes'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition"
+                  className="px-6 py-3 bg-line-subtle text-ink-muted rounded-lg hover:bg-line font-medium transition"
                 >
                   Cancel
                 </button>
@@ -194,80 +231,91 @@ const Profile = () => {
 
       {/* Account Stats */}
       <div className="grid md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
+        <div className="bg-surface rounded-xl shadow-md p-6 text-center">
           <p className="text-3xl font-bold text-primary-600 mb-2">
             {user.enrolledCourses?.length || 0}
           </p>
-          <p className="text-gray-600">Courses Enrolled</p>
+          <p className="text-ink-muted">Courses Enrolled</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <p className="text-3xl font-bold text-green-600 mb-2">
-            {user.completedLessons?.length || 0}
+        <div className="bg-surface rounded-xl shadow-md p-6 text-center">
+          <p className="text-3xl font-bold text-success mb-2">
+            {countCompletedLessons(user, courses)}
           </p>
-          <p className="text-gray-600">Lessons Completed</p>
+          <p className="text-ink-muted">Lessons Completed</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 text-center">
-          <p className="text-3xl font-bold text-orange-600 mb-2">
-            {user.learningStreak || 0}
+        <div className="bg-surface rounded-xl shadow-md p-6 text-center">
+          <p className="text-3xl font-bold text-warning mb-2">
+            {activity.streak === null ? '—' : activity.streak}
           </p>
-          <p className="text-gray-600">Day Streak</p>
+          <p className="text-ink-muted">
+            {activity.streak === null ? 'Day Streak (tracking off)' : 'Day Streak'}
+          </p>
         </div>
       </div>
 
       {/* Preferences */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Preferences</h3>
-        
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-6">
+        <h3 className="text-xl font-bold text-ink mb-6">Preferences</h3>
+
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-line-subtle rounded-lg">
             <div>
-              <p className="font-semibold text-gray-900">Email Notifications</p>
-              <p className="text-sm text-gray-600">Receive updates about your courses</p>
+              <p className="font-semibold text-ink">Course Recommendations</p>
+              <p className="text-sm text-ink-muted">
+                Show rule-based course suggestions from local progress
+              </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={settings.showRecommendations}
+                onChange={(event) =>
+                  updateSetting({ showRecommendations: event.target.checked })
+                }
+              />
+              <div className="w-11 h-6 bg-line peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-line after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-line-subtle rounded-lg">
             <div>
-              <p className="font-semibold text-gray-900">Daily Reminders</p>
-              <p className="text-sm text-gray-600">Get reminded to continue learning</p>
+              <p className="font-semibold text-ink">Email Notifications</p>
+              <p className="text-sm text-ink-muted">
+                Not available — this app has no server to send email from
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-            </label>
+            <span className="text-xs font-semibold text-ink-subtle">Not connected</span>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-line-subtle rounded-lg">
             <div>
-              <p className="font-semibold text-gray-900">Course Recommendations</p>
-              <p className="text-sm text-gray-600">Show AI-powered course suggestions</p>
+              <p className="font-semibold text-ink">Daily Reminders</p>
+              <p className="text-sm text-ink-muted">
+                Not available — this app has no server to schedule reminders
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-            </label>
+            <span className="text-xs font-semibold text-ink-subtle">Not connected</span>
           </div>
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-red-100">
-        <h3 className="text-xl font-bold text-red-600 mb-4">Danger Zone</h3>
-        <p className="text-gray-600 mb-4">
-          Once you delete your account, there is no going back. Please be certain.
+      <div className="bg-surface rounded-2xl shadow-lg p-8 border-2 border-danger/40">
+        <h3 className="text-xl font-bold text-danger mb-4">Danger Zone</h3>
+        <p className="text-ink-muted mb-4">
+          Deleting removes your account and every piece of learning data in this
+          browser. Export your data first if you want to keep it. Settings has
+          the export, import and delete controls.
         </p>
-        <button
-          onClick={handleDeleteAccount}
-          className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold transition"
+        <Link
+          to="/settings"
+          className="inline-block px-6 py-3 bg-danger text-ink-inverse rounded-lg hover:bg-danger-strong font-semibold transition"
         >
-          Delete Account
-        </button>
+          Go to Settings
+        </Link>
       </div>
     </div>
   );

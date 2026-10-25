@@ -1,6 +1,10 @@
 # CrushLearn AI - EdTech Platform
 
-A modern, AI-powered educational platform built with React, Vite, and Tailwind CSS.
+> **Status note:** This is a local-first demo. The guidance engine is rule-based;
+> no language-model provider or AI chat is connected. See `README.md` for the
+> current verified capabilities and limitations.
+
+A modern educational demo built with React, Vite, and Tailwind CSS.
 
 ## 🚀 Features
 

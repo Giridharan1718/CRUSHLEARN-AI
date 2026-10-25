@@ -1,5 +1,8 @@
 # 🎓 CrushLearn AI - Project Summary
 
+> **Status note:** This is a local-first demo. AI chat and model-generated
+> explanations are not implemented. See `README.md` for current capabilities.
+
 ## ✅ Project Created Successfully!
 
 A complete React + Vite EdTech platform with JavaScript, Tailwind CSS, and React Router.

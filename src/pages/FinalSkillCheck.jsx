@@ -143,12 +143,12 @@ const FinalSkillCheck = () => {
   if (isOffline) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 space-y-4">
-          <h1 className="text-2xl font-bold text-gray-900">Final Skill Check</h1>
-          <p className="text-sm text-gray-600">
+        <div className="bg-surface border border-line rounded-xl shadow-sm p-8 space-y-4">
+          <h1 className="text-2xl font-bold text-ink">Final Skill Check</h1>
+          <p className="text-sm text-ink-muted">
             Offline Mode is enabled. The Final Skill Check is unavailable while offline.
           </p>
-          <Link to="/dashboard" className="text-sm font-medium text-gray-900">
+          <Link to="/dashboard" className="text-sm font-medium text-ink">
             Return to Dashboard
           </Link>
         </div>
@@ -158,51 +158,51 @@ const FinalSkillCheck = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 space-y-8">
+      <div className="bg-surface border border-line rounded-xl shadow-sm p-8 space-y-8">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">Final Skill Check</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-ink">Final Skill Check</h1>
+          <p className="text-sm text-ink-muted">
             This is a timed, single-attempt assessment. Keep your answer concise and exact.
           </p>
         </div>
 
-        <div className="border border-gray-200 bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-600">
+        <div className="border border-line bg-line-subtle rounded-lg p-3">
+          <p className="text-xs text-ink-muted">
             AI guidance is disabled during skill verification.
           </p>
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <p className="text-sm font-semibold text-gray-900 mb-2">Task Description</p>
-          <p className="text-sm text-gray-700">{task.description}</p>
+        <div className="border border-line rounded-lg p-4 bg-line-subtle">
+          <p className="text-sm font-semibold text-ink mb-2">Task Description</p>
+          <p className="text-sm text-ink-muted">{task.description}</p>
         </div>
 
-        <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-between border border-line rounded-lg p-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">Time Remaining</p>
-            <p className="text-2xl font-semibold text-gray-900">{minutes}:{seconds}</p>
+            <p className="text-xs uppercase tracking-wide text-ink-subtle">Time Remaining</p>
+            <p className="text-2xl font-semibold text-ink">{minutes}:{seconds}</p>
           </div>
-          <div className="text-xs text-gray-500 text-right">
+          <div className="text-xs text-ink-subtle text-right">
             <p>Assessment Window</p>
             <p>10 minutes</p>
           </div>
         </div>
 
-        <div className="border border-red-200 bg-red-50 rounded-lg p-4">
-          <p className="text-sm font-semibold text-red-700">
+        <div className="border border-danger/40 bg-danger-soft rounded-lg p-4">
+          <p className="text-sm font-semibold text-danger">
             This is a skill check. No hints will be provided.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-ink mb-2">
             Your Final Attempt
           </label>
           <textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             disabled={isLocked}
-            className="w-full h-40 px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-gray-400 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full h-40 px-4 py-3 border border-line rounded-lg font-mono text-sm text-ink focus:outline-none focus:ring-0 focus:border-line-strong resize-none disabled:bg-line-subtle disabled:cursor-not-allowed"
             placeholder="Type the exact output here..."
             spellCheck="false"
           />
@@ -212,29 +212,29 @@ const FinalSkillCheck = () => {
           <button
             onClick={() => handleSubmit('manual')}
             disabled={isLocked || !userInput.trim()}
-            className="px-6 py-3 bg-gray-900 text-white rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-ink text-ink-inverse rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Submit Final Attempt
           </button>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-ink-subtle">
             Submission is final. No retries.
           </span>
         </div>
 
         {status === 'failed' && (
-          <div className="border border-red-200 bg-red-50 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-semibold text-red-700">{message}</p>
-            <p className="text-sm text-red-700">
+          <div className="border border-danger/40 bg-danger-soft rounded-lg p-4 space-y-2">
+            <p className="text-sm font-semibold text-danger">{message}</p>
+            <p className="text-sm text-danger">
               Remediation: Review array methods, string joining, and exact output formatting before reattempting in a new session.
             </p>
-            <p className="text-xs text-red-600">Certificate access is locked.</p>
+            <p className="text-xs text-danger">Certificate access is locked.</p>
           </div>
         )}
 
         {status === 'passed' && (
-          <div className="border border-green-200 bg-green-50 rounded-lg p-4">
-            <p className="text-sm font-semibold text-green-700">{message}</p>
-            <p className="text-xs text-green-600">Redirecting to Skill Passport...</p>
+          <div className="border border-success/40 bg-success-soft rounded-lg p-4">
+            <p className="text-sm font-semibold text-success">{message}</p>
+            <p className="text-xs text-success">Redirecting to Skill Passport...</p>
           </div>
         )}
       </div>

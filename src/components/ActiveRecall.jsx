@@ -185,7 +185,7 @@ const ActiveRecall = ({
   if (!questions || questions.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No questions available for this exercise.</p>
+        <p className="text-ink-subtle">No questions available for this exercise.</p>
       </div>
     );
   }
@@ -195,29 +195,29 @@ const ActiveRecall = ({
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      <div className="bg-white rounded-2xl shadow-lg p-8">
+      <div className="bg-surface rounded-2xl shadow-lg p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-ink">
               Active Recall Practice
             </h2>
-            <p className="text-gray-500">
+            <p className="text-ink-subtle">
               {currentQuestion + 1} of {questions.length} questions
             </p>
           </div>
           <div className="text-right">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-ink-muted">
               Score: {score.correct}/{score.total}
             </span>
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-ink-muted">
               ({Math.round((score.total > 0 ? score.correct / score.total : 0) * 100)}%)
             </span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-gray-100 rounded-full h-2 mb-6">
+        <div className="bg-line-subtle rounded-full h-2 mb-6">
           <div
             className="bg-primary-600 h-2 rounded-full transition-all duration-300"
             style={{
@@ -230,24 +230,24 @@ const ActiveRecall = ({
         <div
           className={`p-6 rounded-xl ${
             showAnswer
-              ? 'bg-gray-50 border border-gray-200'
+              ? 'bg-line-subtle border border-line'
               : 'bg-primary-50 border border-primary-200'
           }`}
         >
           {!showAnswer ? (
             <>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-ink">
                   Question {currentQuestion + 1}
                 </h3>
-                <p className="text-gray-600 mt-2">{q.question}</p>
+                <p className="text-ink-muted mt-2">{q.question}</p>
               </div>
 
               {/* Answer Input */}
               <div className="mb-4">
                 <label
                   htmlFor="answer"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-ink-muted mb-2"
                 >
                   Your Answer
                 </label>
@@ -255,7 +255,7 @@ const ActiveRecall = ({
                   id="answer"
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
+                  className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
                   placeholder="Type your answer here..."
                   rows={4}
                 />
@@ -263,7 +263,7 @@ const ActiveRecall = ({
 
               {/* Confidence Rating */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-ink-muted mb-3">
                   Your Confidence (1-5)
                 </label>
                 <div className="flex space-x-2">
@@ -274,15 +274,15 @@ const ActiveRecall = ({
                       onClick={() => setConfidence(level)}
                       className={`w-10 h-10 rounded-lg font-bold transition ${
                         confidence >= level
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-accent text-ink-inverse'
+                          : 'bg-line-subtle text-ink-muted hover:bg-line'
                       }`}
                     >
                       {level}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-ink-subtle mt-2">
                   How confident are you in your answer?
                 </p>
               </div>
@@ -290,7 +290,7 @@ const ActiveRecall = ({
               <button
                 onClick={handleSubmit}
                 disabled={!userAnswer.trim()}
-                className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-6 py-3 bg-accent text-ink-inverse rounded-lg font-semibold hover:bg-accent-strong transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Show Answer
               </button>
@@ -301,40 +301,40 @@ const ActiveRecall = ({
               <div
                 className={`p-4 rounded-lg ${
                   feedback?.isCorrect
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-red-50 border border-red-200'
+                    ? 'bg-success-soft border border-success/40'
+                    : 'bg-danger-soft border border-danger/40'
                 }`}
               >
                 <p
                   className={`font-semibold ${
                     feedback?.isCorrect
-                      ? 'text-green-800'
-                      : 'text-red-800'
+                      ? 'text-success'
+                      : 'text-danger'
                   }`}
                 >
                   {feedback?.isCorrect ? '✓ Correct!' : '✗ Incorrect'}
                 </p>
-                <p className="text-gray-700 mt-2">
+                <p className="text-ink-muted mt-2">
                   Your answer: <span className="font-medium">{feedback?.userAnswer}</span>
                 </p>
-                <p className="text-gray-900 font-medium mt-2">
+                <p className="text-ink font-medium mt-2">
                   Correct answer: <span className="font-bold">{feedback?.correctAnswer}</span>
                 </p>
                 {feedback.timeTaken > 0 && (
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-ink-subtle mt-2">
                     Time taken: {feedback.timeTaken}s
                   </p>
                 )}
                 {feedback.skipped && (
-                  <p className="text-sm text-yellow-600">
+                  <p className="text-sm text-warning">
                     Question skipped
                   </p>
                 )}
               </div>
 
               {/* Confidence Feedback */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
+              <div className="p-4 bg-line-subtle rounded-lg">
+                <p className="text-sm text-ink-muted">
                   Your confidence:{' '}
                   <span className="font-medium">
                     {['Low', 'Low', 'Medium', 'High', 'Very High'][confidence - 1]}
@@ -342,7 +342,7 @@ const ActiveRecall = ({
                   {' '}
                   ({confidence}/5)
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-ink-subtle mt-1">
                   {feedback?.isCorrect
                     ? 'Good job! You are confident about this topic.'
                     : 'Keep reviewing this topic. Your confidence will improve with practice.'}
@@ -354,21 +354,21 @@ const ActiveRecall = ({
                 <button
                   onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
                   disabled={currentQuestion === 0}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
+                  className="px-4 py-2 bg-line-subtle text-ink rounded-lg font-medium hover:bg-line transition disabled:opacity-50"
                 >
                   Previous
                 </button>
                 {!isLast ? (
                   <button
                     onClick={handleNext}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition"
+                    className="px-4 py-2 bg-accent text-ink-inverse rounded-lg font-medium hover:bg-accent-strong transition"
                   >
                     Next →
                   </button>
                 ) : (
                   <button
                     onClick={handleNext}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
+                    className="px-4 py-2 bg-success text-ink-inverse rounded-lg font-medium hover:bg-success-strong transition"
                   >
                     Complete!
                   </button>

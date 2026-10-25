@@ -1,5 +1,8 @@
 # 🚀 CrushLearn AI - Setup Instructions
 
+> **Status note:** This is a local-first demo. AI chat and model-generated
+> explanations are not implemented. See `README.md` for current capabilities.
+
 ## Complete Project Setup Guide
 
 ### Prerequisites
