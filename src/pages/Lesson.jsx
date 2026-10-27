@@ -6,6 +6,7 @@ import { AuthService } from '../utils/auth';
 import { createDiagnosticAssessment, getDiagnosticScore } from '../utils/diagnosticAssessment';
 import { classifyEvidence, ASSESSMENT_STATES, getStateLabel, getStateColor } from '../utils/evidenceClassification';
 import { isLessonCompleted, markLessonCompleted } from '../utils/lessonProgress.mjs';
+import { getLessonPrerequisiteProgress, canAccessLesson } from '../utils/prerequisiteProgress.mjs';
 import { recordActivity } from '../utils/learningActivity.mjs';
 import Simulation from '../components/Simulation';
 import LessonJourney from '../components/learning/LessonJourney';
@@ -385,7 +386,16 @@ const Lesson = () => {
     setShowMasteryWarning(false);
   };
 
-  const canProceedWithNextLesson = passedQuiz || masteryPassed;
+  const completedLessonIds = completed
+    ? [...(user.completedLessons || []), lessonId]
+    : user.completedLessons || [];
+
+  const nextLessonPrerequisiteProgress = nextLesson
+    ? getLessonPrerequisiteProgress(nextLesson.id, completedLessonIds)
+    : { prerequisitesMet: true, missing: [] };
+
+  const canProceedWithNextLesson =
+    (passedQuiz || masteryPassed) && nextLessonPrerequisiteProgress.prerequisitesMet;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -900,6 +910,25 @@ const Lesson = () => {
             </div>
           </div>
         </div>
+
+        {/* Prerequisite Gate Warning */}
+        {!nextLessonPrerequisiteProgress.prerequisitesMet && nextLesson && (
+          <div className="mb-6 p-4 bg-warning-soft border border-warning/40 rounded-xl shadow-sm">
+            <div className="flex items-start space-x-3">
+              <span className="text-warning text-xl">⚠️</span>
+              <div>
+                <p className="text-warning font-semibold text-sm">
+                  Prerequisites Not Met
+                </p>
+                <p className="text-warning text-sm mt-1">
+                  Complete the prerequisite lesson
+                  {nextLessonPrerequisiteProgress.missing.length === 1 ? '' : 's'}{' '}
+                  before unlocking {nextLesson.title}.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Mastery Gate Warning */}
         {showMasteryWarning && (

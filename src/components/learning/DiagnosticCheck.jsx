@@ -190,6 +190,23 @@ const DiagnosticCheck = ({
     setMode('summary');
   };
 
+  const handleSkip = () => {
+    if (!currentItems.length) return;
+    const { evidence: nextEvidence, attempt } = recordAttempt(evidence, {
+      items: currentItems,
+      answers: {},
+      source: mode,
+      at: new Date().toISOString(),
+      metadata: { skipped: true },
+    });
+    store.save(courseId, nextEvidence);
+    setEvidence(nextEvidence);
+    setLastAttempt(attempt);
+    setFeedback(null);
+    setAnswers({});
+    setMode('summary');
+  };
+
   return (
     <DiagnosticCheckView
       courseId={courseId}
@@ -207,6 +224,7 @@ const DiagnosticCheck = ({
       onToggle={() => setCollapsed((value) => !value)}
       onAnswer={handleAnswer}
       onSubmit={handleSubmit}
+      onSkip={handleSkip}
       onStartDiagnostic={startDiagnostic}
       onStartPractice={startPractice}
       onStartReassessment={startReassessment}

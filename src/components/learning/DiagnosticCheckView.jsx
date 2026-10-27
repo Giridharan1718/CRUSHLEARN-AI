@@ -167,6 +167,7 @@ const DiagnosticCheckView = ({
   onToggle,
   onAnswer,
   onSubmit,
+  onSkip,
   onStartDiagnostic,
   onStartPractice,
   onStartReassessment,
@@ -284,6 +285,15 @@ const DiagnosticCheckView = ({
               />
             ))}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              {onSkip && (
+                <button
+                  type="button"
+                  onClick={onSkip}
+                  className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-muted hover:bg-line-subtle"
+                >
+                  Skip / I'm not sure
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onSubmit}

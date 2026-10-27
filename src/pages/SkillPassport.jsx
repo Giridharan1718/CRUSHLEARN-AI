@@ -9,6 +9,8 @@ import {
   countCompletedLessons,
   getCourseCompletionStats,
 } from '../utils/lessonProgress.mjs';
+import { getProgressForAllSubjects } from '../utils/prerequisiteProgress.mjs';
+import { getLessonObjectiveObjects } from '../content/index.mjs';
 
 const RESULT_KEY = 'final_skill_check_result';
 
@@ -46,6 +48,25 @@ const SkillPassport = () => {
     });
     return summary;
   }, [user.enrolledCourses, user.completedLessons]);
+
+  const completedObjectiveIds = useMemo(() => {
+    const ids = new Set();
+    (user.completedLessons || []).forEach((lessonId) => {
+      const course = courses.find((item) =>
+        item.lessons.some((lesson) => lesson.id === lessonId)
+      );
+      const lesson = course?.lessons.find((item) => item.id === lessonId);
+      const objectives =
+        course && lesson ? getLessonObjectiveObjects(course, lesson) : [];
+      objectives.forEach((objective) => ids.add(objective.id));
+    });
+    return [...ids];
+  }, [user.completedLessons]);
+
+  const objectiveProgress = useMemo(
+    () => getProgressForAllSubjects(completedObjectiveIds),
+    [completedObjectiveIds]
+  );
 
   const finalResult = useMemo(() => {
     const raw = localStorage.getItem(RESULT_KEY);
@@ -201,6 +222,36 @@ const SkillPassport = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Objective Progress Section */}
+      <div className="bg-surface rounded-2xl shadow-lg p-8 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-ink">Objective Progress</h2>
+          <span className="text-sm text-ink-subtle">
+            Reusable learning objectives completed across subjects
+          </span>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {Object.entries(objectiveProgress).map(([subject, progress]) => (
+            <div key={subject} className="bg-line-subtle rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-ink capitalize">
+                  {subject}
+                </span>
+                <span className="text-sm text-ink-muted">
+                  {progress.completedObjectives}/{progress.totalObjectives}
+                </span>
+              </div>
+              <div className="w-full bg-line rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full"
+                  style={{ width: `${progress.percentage}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

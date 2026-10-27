@@ -87,7 +87,7 @@ export const getLessonPrerequisiteProgress = (
     };
   }
 
-  const prerequisiteIds = lesson.prerequisiteLessonIds || [];
+  const prerequisiteIds = lesson.prerequisites?.lessonIds || lesson.prerequisiteLessonIds || [];
   const completedSet = new Set(completedObjectiveIds);
   const missing = prerequisiteIds.filter(
     (id) => !completedSet.has(id)
